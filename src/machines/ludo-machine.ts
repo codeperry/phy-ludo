@@ -1,6 +1,6 @@
-import { setup, and, or, assign } from "xstate";
+import { setup, and, or, assign, not } from "xstate";
 import * as constants from "../constants/ludo-consts.js";
-import { getAllPermutations } from "../utilities/ludo-util.js";
+import { findKeyByIndexValue, getAllPermutations, without } from "../utilities/ludo-util.js";
 
 // https://excalidraw.com/#room=416529e81323031ee329,06M_ZtCnwEXZpGCI7B7B9g
 
@@ -17,7 +17,7 @@ class Player {
 
 export const ludoMachine = setup({
   types: {
-    input: {} as {roomId?: string},
+    input: {} as {roomId?: string , openingValues?: number[]},
     context: {} as {
       constants: typeof constants;
       roomId: string;
@@ -42,14 +42,18 @@ export const ludoMachine = setup({
     isPlayersLessThan4: ({ context }) => context.players.length < 4,
     isNotOpeningValue: ({ context }) => !context.openingValues.includes(context.currDiceValues[context.currDiceValues.length - 1]),
     isCurrPlayer:({event})=>event.diceId || true,
-    cantMove: ({ context }) => {
+    cantMove: ({ context, event }) => {
       return !Object.values(context.possibleCurrPlayerMoves).some(pm=>pm.some(p=>p!=-1))
     },
     isInvalidMove: ({context, event})=>{
       const {currTurnIndex,players} = context;
       const currPlayer = players[currTurnIndex];
       if(event.type === 'pieceMoved'){
-        return !Object.values(context.possibleCurrPlayerMoves).some(pm=>pm[event.pieceIndex]===constants.colorMoveMap[currPlayer.playerColor].indexOf(event.newPosition))
+        const possibleMoveIndexesByThisPiece = Object.values(context.possibleCurrPlayerMoves).map(pm=>pm[event.pieceIndex]);
+        const newPositionIndexInMoveMap = constants.colorMoveMap[currPlayer.playerColor].indexOf(Number(event.newPosition));
+
+        return newPositionIndexInMoveMap === -1 || !possibleMoveIndexesByThisPiece.includes(newPositionIndexInMoveMap)
+        // return !Object.values(context.possibleCurrPlayerMoves).some(pm=>pm[event.pieceIndex]===constants.colorMoveMap[currPlayer.playerColor].indexOf(event.newPosition))
       }
       return false;      
     },
@@ -59,10 +63,6 @@ export const ludoMachine = setup({
       return false;
     },
     isGoingHome: function ({ context, event }) {
-      // Add your guard condition here
-      return false;
-    },
-    hasMoreValues: function ({ context, event }) {
       // Add your guard condition here
       return false;
     },
@@ -149,13 +149,28 @@ export const ludoMachine = setup({
       
       return {possibleCurrPlayerMoves:newPossibleMoves}
     }),
-    updateDiceValues: assign(()=>{
-
-      return {currDiceValues: []}
+    removeMovedKeyValues: assign(({context, event})=>{
+      if(event.type!='pieceMoved') return {};
+      const {newPosition:newPositionStr, pieceIndex} = event;
+      const newPosition = Number(newPositionStr);
+      const currPlayer = {...context.players[context.currTurnIndex]};
+      const newPositionIndex = constants.colorMoveMap[currPlayer.playerColor].indexOf(newPosition);
+      // const newPossibleMoves = Object.fromEntries(
+      //   Object.entries(context.possibleCurrPlayerMoves).filter(([_, arr]) => arr[pieceIndex] !== newPositionIndex)
+      // );
+      return {possibleCurrPlayerMoves: {}, currDiceValues:without(context.currDiceValues,findKeyByIndexValue(context.possibleCurrPlayerMoves,pieceIndex,newPositionIndex)||[])}
+    }),
+    setPieceNewPosition: assign(({context, event})=>{
+      if(event.type != "pieceMoved") return {};
+      const newPosition = Number(event.newPosition);
+      const currPlayer = {...context.players[context.currTurnIndex]};
+      const updatedCurrPlayerPositionIndex = constants.colorMoveMap[currPlayer.playerColor].indexOf(newPosition);
+      currPlayer.playerPositionIndexes[event.pieceIndex] = updatedCurrPlayerPositionIndex;
+      return {players: context.players.map((p,i)=>i===context.currTurnIndex?currPlayer:p)}
     })
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QBkCuED2A6AlhANmAMSwAuAhgE6kDaADALqKgAOGsOpOGAdsyAA9EAJmFYAHHQCsATgDMARgBsk8VIV0ZAGhABPEQBYxUuuLnrxSqeeEB2cQF8HOtJlwFiAKww4eAcXIAWzB6JiQQNg4uXn4hBABaBSlbLDlxe3EFYQU0uTkZJR19BANzCRNpOmElRTSZJxd0bAB3ck5fKAAxDEoAFVRKHiJKDHx8ABEcAGMQxn5I9pjwuJNjWwMFe2EDGU2pcSLEA2OsWX3NWwyjJQMGkFdsEbGOyZnh0Ynp2bDWdkW+ZZHJQKLDCcxKMEmGQyIzaPSITYyUEwlS2BQaOS2Ux3B5YJ74F5fIiheZ-aIA0BxXZKLA7YF0DFSbZyQ4IYRqLBJYHpApSAw1cw4ppYQIYABuHQACjgwG8AFQsGUzACy4sgJPCC3JsQRcmBtLMfKkSiUtjkRmErJuYjMWXWCksciqwiFblFEp4UGlsuIip9qrF6rmmrJ3ApggR2SRdD1tjswhhyXZrLsBlSDohsmk6I2ruw7qlSt9RYD6oUPwioaWlN18gkShkokkqdsxtZeSkBusfPyMey0jzIvFhZ9RD9KrVEBowgrWrDOoQOXWWDoJtXVQMxpuhXhCHyadTMlswKU0j1g4Lnu9b3HYFLU7ks6r4biCg2adM+zNZvZ6ikrOOTsFGpAxxATGoG3qZx7mFS8vSLMcS0nGgDCfKJ50BRcmTkLBUXsY4ZDoTdkgAswsCPVdxEyXZjWyKQL2HK8ENve8aCkND-gXZRMlBVsE3kE12VbVkmRSdl0TA3ZsiyKDGjdRj4NHDVfnQ6sI0XTQbVNN8wUhCEDl3A9txuMxFGsTF6Og3EpnIFhSAGDoAHkWDYHgwB4UgiEwNzlMrVSX11LJcMUS50gMM1NNZN8UjoVdNiMIjWxkaxBxsuyHM9ZzXPczzvJCctSX8rjhFizkIVNEqkg2PlWWS5F+UybJ1nEcLBygHxPQACQwYIvN4b5Cs4zCkmXAo7HEAock3BQrRyTkLOSGMmXUBQ2o6qBut6vKaAKkMiuGiEQWSoik1KDY5EtXcrE7I8djfc1WzApQ1o6TbiG2mdBu1A6ymPOxT3CqMmVZLE0woyQ0UbM1lFSgALDA-k9ABhUYej6nzgxUoaawQKxQXG6pkjjUpbAA5d+W2Sw1F2GE5EHUgwECFhiUxvzsfUtcsCxMFYrSLJlqiwjTji-kzSopljicaCeAwCA4H4B4vownH4hKzs0gyLIclMgpWXiMilrSFq1AZN9HCs4U8EIJW1LieIanTRsjAMTRwtA9Z203ZFEwTcX1CsQdWnaT1uj6AZwznW2RATUEcidDZsgTt9PZpRR0ikDOG2BbJnottx8UJGYbYC3G7BXCEdiovUGwmlNlyqbCNmuk1LLk-MFOvMBi64rI6FBfJbBhN83wFADNHrdJlA2bmj1ztusDS+zKCclz+o87vhr5G0zEsGQJvWBMWV3aoxAZKjpH2GoHVkmC3Ha16eq7vb2dfOwcJKhlkkyN9jhm3dzlSIoVMGYnSiEDr4DeONgJJFpOVdI-FjgtREqaWk6xoTok2NsAocMEYcGRqjSgkD1LxGhBIYQ3YVAV3NDGES6gVyyDyDUPkNwb64gZkzIhKwChcxrgmB0sViZRToCkIwWRDSDxdvsF0UsgA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QBkCuED2A6AlhANmAMSwAuAhgE6kDaADALqKgAOGsOpOGAdsyAA9EAJmFYAHHQCsATgDMARgBsk8VIV0ZAGhABPEQBYxUuuLnrxSqeeEB2cQF8HOtJlwFiAKww4eAcXIAWzB6JiQQNg4uXn4hBABaBSlbLDlxe3EFYQU0uTkZJR19BANzCRNpOmElRTSZJxd0bAB3ck5fKAAxDEoAFVRKHiJKDHx8ABEcAGMQxn5I9pjwuKlqrGSDBVsZeWE1WykixAMpJXWZKUy6JWFrsykpBpBXbBGxjsmZ4dGJ6dmw1jsRZ8ZaIdQGLB0cxKWxKOhGLZZI4ILYpAo5awqOQGHZKJ4vLBvfAfP5EULzIHREGgOIyZRYHFKDQaGylZF7KRYJJM9IFKQGGrmfFNLCBDAANw6AAUcGAvixZTMALISyA0BQAiKU7jUwSIHJlKEwzR3HIKAzs8RiGTXBTicSbOx5AzCtxiyU8KAyuXEcnhBZU2L621YeRpDT2ulMwp6RApBQybY7OqrOx0Wyu7BTcgsUgDDoAeRYbB4YB4pCImFLfsBUR1QZRKk5ynUpmqcLktmRWTO6b2O2uySZ20zWGzufznqLJbLFarIQ1FLrSxp+uSYiUBTodCS2PNcmRtghciZBmu6YdlkTo6gPk9AAkMMFK7x-kvgQ2E1ssDcLhGT-IdrIkoJzrJ2-JyFC2T2I8zjPCKt4dI+z7zuqmoBvWoIogUELDlsDpKCoMgWrGCAqOIqRHjaUIGCcCg3neUDIcQqHCOh2ornq2H2AywjEZkm6nLCh6dpR6aAeIfL1HBBJTAAFhgQKegAwqMPQvtWcz+hxupxFYWCiPY1TJLYwilF2pEGEeDI3AYlhqHSxFyKOpBgIELBklptYflhtg5OsVQ2HS2KqN2klcqZmR5AoCaZMIzkySKLAjDMsAcJ6ABq5DEhAKrir6Xlasuun6iBZzxUytx8VZVnsiBXI4fyOQgfYR6jslGCpelUBZTleW+ou2nFZ+pkyKGpiKBctyZA6yKdsY1RVKUdImm1iVuB1XUdL1eD9WSbHvoGWF2qJpx2jFpk3CeB6WXxBmyPymQwXIhntSlcDdTtuWqmScjscNx10hRWzUScexJA8yJ2XIBmZMoL0xTs2RvZ1H3bdlu0-TQBj-T5q7YVUDI7jCkFWDI9zIpiXKbEe2xVeoCWNG6ErSoqxAKj6-UQDWRV41xMU3GJq07pJeTsti6yrEk0gvfy4JOHBPAYBAcD8C8h2Yfj8S3JyaQZFkORmPkMbFPEkhclU26LSchFWKOeCEBrnFxPENSpAmZlmZoNXpCRxTYpyfHEas5NqOodvrS0bRcJ63R9AMuoYc7Ih3dkeTwgbjrmnNAru+kDynOi2R4pHhI-CSMxOyVCBDqkFxWpYEPyHVCgMkDMJnqYdICqO7qsz6VefoOqTXGDJw7icN3FJsELyNYwiXNcV3wqO455pQhbFq+5aD8dT0SIiBQ1Jkf5hSk2T2imOKDgxSFPmAu-4y2Zy2w68jj+TfuIHCFE7HTC92kTBcUczRfCPy4qIbIWBRq0QEjiUOlMbQ-ionCaw24HiM3gm4eSiluqqXwD0cBLsdgSAXtCSwZlsRQkpuoSEsg8g1H5CBaSTNsCuXckQ7+OJ1ibntIieK24LLFA0L2XkJgkhkIFMIFGW1MoY2+vlThKJzLQJolnB0MUv4lDsgycwih4qSGsFsBWDggA */
   context: ({input})=>({
     constants: constants,
     roomId: input.roomId||"",
@@ -220,38 +235,18 @@ export const ludoMachine = setup({
 
     movingPiece: {
       on: {
-        "*pieceMoved":{actions:"updateDiceValues"},
         pieceMoved: [{
-          target: "movingPiece",
-          guard: {
-            type: "isInvalidMove",
-          },
-        }, {
-          target: "capturingOpponent",
-          guard: "isOppCapturable"
-        }, {
-          target: "goingHome",
-          guard: {
-            type: "isGoingHome",
-          },
-        }, {
-          target: "movingPiece",
-          guard: {
-            type: "hasMoreValues",
-          },
-        }, {
-          target: "rollingDice",
-          guard: {
-            type: "hasCapturedOrHasGoneHome",
-          },
-        }, {
           target: "waitingForTurn",
+          reenter: true
+        }, {
+          target: "movingPiece",
+          actions: "setPossibleMoves"
         }]
       },
 
       always: {
-        target: "waitingForTurn",
-        guard: "cantMove",
+        target: "capturingOpponent",
+        guard: "isOppCapturable",
         reenter: true
       }
     },
@@ -261,9 +256,7 @@ export const ludoMachine = setup({
         done: [
           {
             target: "movingPiece",
-            guard: {
-              type: "hasMoreValues",
-            },
+            guard: not("cantMove"),
           },
           {
             target: "rollingDice",
@@ -284,9 +277,7 @@ export const ludoMachine = setup({
           },
           {
             target: "movingPiece",
-            guard: {
-              type: "hasMoreValues",
-            },
+            guard: not("cantMove"),
           },
           {
             target: "rollingDice",
@@ -309,6 +300,33 @@ export const ludoMachine = setup({
 
     temp: {
       always: "rollingDice"
+    },
+
+    processingValidMove: {
+      always: [{
+        target: "rollingDice",
+        guard:  "hasCapturedOrHasGoneHome",
+        reenter: true
+      }, {
+        target: "goingHome",
+        guard: "isGoingHome",
+        reenter: true
+      }, {
+        target: "waitingForTurn",
+        guard: "cantMove",
+        reenter: true
+      }, {
+        target: "movingPiece",
+
+        guard: {
+          type: "isInvalidMove",
+        },
+
+        reenter: true
+      }, {
+        target: "processingValidMove",
+        actions: ["removeMovedKeyValues", "setPieceNewPosition", "setPossibleMoves"]
+      }]
     }
   },
 });

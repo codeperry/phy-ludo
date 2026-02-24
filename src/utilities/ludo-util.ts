@@ -35,3 +35,22 @@ function permute(numbers: number[], length: number): number[][] {
   backtrack([]);
   return result;
 }
+
+export function findKeyByIndexValue(
+  obj: Record<string, number[]>,
+  atIndex: number,
+  value: number,
+): number[] | undefined {
+  for (const key of Object.keys(obj)) {
+    const arr = obj[key];
+    // skip non-arrays or too-short arrays
+    if (!Array.isArray(arr) || arr.length <= atIndex) continue;
+    if (arr[atIndex] === value) return JSON.parse(key);
+  }
+  return undefined;
+}
+
+export function without<T>(arr: T[], removeArr: T[]): T[] {
+  const toRemove = new Set(removeArr);
+  return arr.filter((x) => !toRemove.has(x));
+}
