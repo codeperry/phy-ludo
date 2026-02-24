@@ -81,7 +81,7 @@ export const ludoMachine = setup({
     },
   },
   actions: {
-    clearValuesWhen3: assign(({ context }) => context.currDiceValues.length > 3 ? ({currDiceValues: []} ):({})),
+    clearValuesWhen3: assign(({ context }) => context.currDiceValues.length >= 3 ? ({currDiceValues: []} ):({})),
     setTurnOrder: assign(({ context }) => {
       // select random index out of current players as first.
       // put it at first and arrange other players as in turn order defined in constants based on color
@@ -139,6 +139,7 @@ export const ludoMachine = setup({
           } else if(pp === 0){
             newPP = 1;
           } else if(pp + lastDiceValue > 57){ 
+          } else if(pp === -1) {
           } else {
             newPP = pp + lastDiceValue;
           }
@@ -170,7 +171,7 @@ export const ludoMachine = setup({
     })
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QBkCuED2A6AlhANmAMSwAuAhgE6kDaADALqKgAOGsOpOGAdsyAA9EAJmFYAHHQCsATgDMARgBsk8VIV0ZAGhABPEQBYxUuuLnrxSqeeEB2cQF8HOtJlwFiAKww4eAcXIAWzB6JiQQNg4uXn4hBABaBSlbLDlxe3EFYQU0uTkZJR19BANzCRNpOmElRTSZJxd0bAB3ck5fKAAxDEoAFVRKHiJKDHx8ABEcAGMQxn5I9pjwuKlqrGSDBVsZeWE1WykixAMpJXWZKUy6JWFrsykpBpBXbBGxjsmZ4dGJ6dmw1jsRZ8ZaIdQGLB0cxKWxKOhGLZZI4ILYpAo5awqOQGHZKJ4vLBvfAfP5EULzIHREGgOIyZRYHFKDQaGylZF7KRYJJM9IFKQGGrmfFNLCBDAANw6AAUcGAvixZTMALISyA0BQAiKU7jUwSIHJlKEwzR3HIKAzs8RiGTXBTicSbOx5AzCtxiyU8KAyuXEcnhBZU2L621YeRpDT2ulMwp6RApBQybY7OqrOx0Wyu7BTcgsUgDDoAeRYbB4YB4pCImFLfsBUR1QZRKk5ynUpmqcLktmRWTO6b2O2uySZ20zWGzufznqLJbLFarIQ1FLrSxp+uSYiUBTodCS2PNcmRtghciZBmu6YdlkTo6gPk9AAkMMFK7x-kvgQ2E1ssDcLhGT-IdrIkoJzrJ2-JyFC2T2I8zjPCKt4dI+z7zuqmoBvWoIogUELDlsDpKCoMgWrGCAqOIqRHjaUIGCcCg3neUDIcQqHCOh2ornq2H2AywjEZkm6nLCh6dpR6aAeIfL1HBBJTAAFhgQKegAwqMPQvtWcz+hxupxFYWCiPY1TJLYwilF2pEGEeDI3AYlhqHSxFyKOpBgIELBklptYflhtg5OsVQ2HS2KqN2klcqZmR5AoCaZMIzkySKLAjDMsAcJ6ABq5DEhAKrir6Xlasuun6iBZzxUytx8VZVnsiBXI4fyOQgfYR6jslGCpelUBZTleW+ou2nFZ+pkyKGpiKBctyZA6yKdsY1RVKUdImm1iVuB1XUdL1eD9WSbHvoGWF2qJpx2jFpk3CeB6WXxBmyPymQwXIhntSlcDdTtuWqmScjscNx10hRWzUScexJA8yJ2XIBmZMoL0xTs2RvZ1H3bdlu0-TQBj-T5q7YVUDI7jCkFWDI9zIpiXKbEe2xVeoCWNG6ErSoqxAKj6-UQDWRV41xMU3GJq07pJeTsti6yrEk0gvfy4JOHBPAYBAcD8C8h2Yfj8S3JyaQZFkORmPkMbFPEkhclU26LSchFWKOeCEBrnFxPENSpAmZlmZoNXpCRxTYpyfHEas5NqOodvrS0bRcJ63R9AMuoYc7Ih3dkeTwgbjrmnNAru+kDynOi2R4pHhI-CSMxOyVCBDqkFxWpYEPyHVCgMkDMJnqYdICqO7qsz6VefoOqTXGDJw7icN3FJsELyNYwiXNcV3wqO455pQhbFq+5aD8dT0SIiBQ1Jkf5hSk2T2imOKDgxSFPmAu-4y2Zy2w68jj+TfuIHCFE7HTC92kTBcUczRfCPy4qIbIWBRq0QEjiUOlMbQ-ionCaw24HiM3gm4eSiluqqXwD0cBLsdgSAXtCSwZlsRQkpuoSEsg8g1H5CBaSTNsCuXckQ7+OJ1ibntIieK24LLFA0L2XkJgkhkIFMIFGW1MoY2+vlThKJzLQJolnB0MUv4lDsgycwih4qSGsFsBWDggA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QBkCuED2A6AlhANmAMSwAuAhgE6kDaADALqKgAOGsOpOGAdsyAA9EAJmFYAHHQCsATgDMARgBsk8VIV0ZAGhABPEQBYxUuuLnrxSqeeEB2cQF8HOtJlwFiAKww4eAcXIAWzB6JiQQNg4uXn4hBABaBSlbLDlxe3EFYQU0uTkZJR19BANzCRNpOmElRTSZJxd0bAB3ck5fKAAxDEoAFVRKHiJKDHx8ABEcAGMQxn5I9pjwuKlqrGSDBVsZeWE1WykixAMpJXWZKUy6JWFrsykpBpBXbBGxjsmZ4dGJ6dmw1jsRZ8ZaIdQGLB0cxKWxKOhGLZZI4ILYpAo5awqOQGHZKJ4vLBvfAfP5EULzIHREGgOIyZRYHFKDQaGylZF7KRYJJM9IFKQGGrmfFNLCBDAANw6AAUcGAvixZTMALISyDk8ILKmxRAKZRiOS2OiaOiGhTieRydnY9arJLSOTCfng4VuMWSnhQGVy4gK70q8VqhQAiKU7jUwQ67HiLAyKFpc0KAXCAzs2NYGoXa50LL86Eu7BTcgsUgDDoAeRYbB4YB4pCImGr6sBUTD2pRKk5ynUpmqcINyKyZxNex212STO2+awheLpY9FarNbrDZCQYpLaWNJ1yTESgKRqS2MTlr0iFsELkTIMWfsBksMlsU6gPg9AAkMMF67x-uvgW2FHSKQ3BcGhmHuijiMiSgnOsBq5lC2T2I8zjPCKz4dO+n4rjQa4aqGm4RiiBQQhOWziAKKgyCmp4ICo0YGjiRrYicChPi+UCYcQ2HCMGmqtqCRH2AywhUZke6nLCyK2AaqSGtsEF8vUKEElMAAWGBAh6ADCow9F+jZzHhG7hnEVhYKI9jVMktjJv2NEGOeDI3HeHZ0lRchTqQYCBCwZKGc2f4CbYOTrFUNh0lGpgDuaXI2ZkeS6jImTCB5ykiiwIwzLAHAegAauQxIQP6xBNiGxn-oanLkXuRjQaI-LInI0jmTUiaSElWw3FOGUYFlOVQPlhXFWSuEBVqAmdWIBibNBe5JSc02NQcMYyNUOylOatjSd1mVwP1g14MNNA8b+41biiagKFyUJKNBbVGA+yKlGcAF7Mo5rXhFO29XtHQHUVqpknIvH4SZOpUZyBqxnU4jkTk2j2atEiZGa2ZMiYsLfX1f0FYdgM0AYIPlRNSV0FySaXqOwUI8U-JiOeW29nk1iXlObrSoqJX+WVgXnUlu5Gps-I1HethSemZriCJFiXuoupOChPAYBAcD8C8p38ed8S3JD6Sw1kORmPkhQ0fE2zpijDopVL5FTnghAawRcTxDUqSvUYn0OaL1HFNinIiRDImww8XZTq07Qet0fQDOGfFOyIInmTkTWbNkqeJo1Apu+kDynOi2R4mlbhEiSMyO2DCDjqkFw2+jsgnsU1RXTiZowteph0gKbMShz3rl-+Y6pNcJzJiYibWE9iYxuYDqXNcNwp1OM4lpQ5aVt+tb9xNmQpDvAG3WkAHqNFKTZLDdT8rGVhsRhH5gFv51dmct0qDifuaORUGmCt2z1WaD4XDDr4B+hFRDZCwDZKid5lA4iSpBGisgyZt33NYI0DxUqNDcGpDS-UdL4B6CA52OwJCOmhJYWy14G5gnUJCeul5zAChxJ5byLBCGIGgjIdYe59bBRSkaMWNENBDl5GPVY1gkxY1+nlXGAMAxsJRBtCBhpNDvTSFYQ49k4QxhUDCTuqx54GAVg4IAA */
   context: ({input})=>({
     constants: constants,
     roomId: input.roomId||"",
@@ -197,7 +198,7 @@ export const ludoMachine = setup({
 
         joinGame: {
           target: "choosingColor",
-          reenter: true,
+          
           guard: "isPlayersLessThan4"
         }
       },
@@ -222,7 +223,7 @@ export const ludoMachine = setup({
       on: {
         rollDice: {
           target: "temp",
-          reenter: true,
+          
           guard: "isCurrPlayer"
         }
       },
@@ -236,18 +237,19 @@ export const ludoMachine = setup({
     movingPiece: {
       on: {
         pieceMoved: [{
-          target: "waitingForTurn",
-          reenter: true
-        }, {
           target: "movingPiece",
-          actions: "setPossibleMoves"
+          guard: "isInvalidMove"
+        }, {
+          target: "processingValidMove",
+          actions: ["removeMovedKeyValues","setPieceNewPosition","setPossibleMoves"],
+          
         }]
       },
 
       always: {
-        target: "capturingOpponent",
-        guard: "isOppCapturable",
-        reenter: true
+        target: "waitingForTurn",
+        
+        guard: "cantMove"
       }
     },
 
@@ -260,7 +262,7 @@ export const ludoMachine = setup({
           },
           {
             target: "rollingDice",
-            reenter: true,
+            
           },
         ],
       },
@@ -304,28 +306,24 @@ export const ludoMachine = setup({
 
     processingValidMove: {
       always: [{
-        target: "rollingDice",
-        guard:  "hasCapturedOrHasGoneHome",
-        reenter: true
+        target: "capturingOpponent",
+        guard: "isOppCapturable",
+        
       }, {
         target: "goingHome",
         guard: "isGoingHome",
-        reenter: true
+        
       }, {
-        target: "waitingForTurn",
-        guard: "cantMove",
-        reenter: true
+        target: "rollingDice",
+        guard:  "hasCapturedOrHasGoneHome",
+        
       }, {
         target: "movingPiece",
-
-        guard: {
-          type: "isInvalidMove",
-        },
-
-        reenter: true
+        guard: not("cantMove"),
+        
       }, {
-        target: "processingValidMove",
-        actions: ["removeMovedKeyValues", "setPieceNewPosition", "setPossibleMoves"]
+        target: "waitingForTurn",
+        
       }]
     }
   },
